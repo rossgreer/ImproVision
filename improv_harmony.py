@@ -52,6 +52,7 @@
 # -------------------------------------------------------------------------------------------------------
 
 # open questions
+# - is the dictionary format useful as output of the robot_instructions function? easy to access?
 # - what if someone misses or misinterprets a cue (e.g. goes up a whole step instead of half)? would mess up future chords as well
-# - how to define the "move-on cue"
+# - how to define the "move-on cue" - what counts as desire to change/boredom/displeasure?
 # - try out what tilt angles work best for which cues
