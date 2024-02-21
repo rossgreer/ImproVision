@@ -1,4 +1,5 @@
 # Function for how each instrument moves for each measure (half/whole step, up/down)
+# This script just prints it; look at robot_instructions_as_dict.py for better set-up
 
 import pretty_midi
 
