@@ -5,39 +5,35 @@
 
 # -------------------------------------------------------------------------------------------------------
 
-# run robot_instructions function from robot_instructions_as_dict.py to find out what instruments should move when
+# (run robot_instructions function from robot_instructions_as_dict.py to find out what instruments should move when)
 
-# for each measure:
-#   when "move-on cue" is detected or if 30 seconds passes without a cue being detected:
-#       individual cue functions
-#       then global cue function
-#   then move on to next measure
-
-
-# INDIVIDUAL CUE FUNCTIONS
-
-# for each individual musician that does not have "stay" as instruction:
-#   center camera on musician ("eye contact")
-#   wait 1 second
-#   perform desired cue (see helper functions below)
-#   then pan to next instrument that has something other than "stay"
-# return to default state facing middle
-
-# def up_half(player):
-#   tilt up 30 degrees
-#   return to default state
-
-# def up_whole(player):
-#   tilt up 60 degrees
-#   return to default state
-
-# def down_half(player):
-#   tilt down 30 degrees
-#   return to default state
-
-# def up_whole(player):
-#   tilt down 60 degrees
-#   return to default state
+# for measure, info in instructions_by_measure.items():
+#   if ("move-on cue" detected) or (30 seconds passes without "move-on cue"):
+#       for instr in info:
+#           if info[instr] == "up half":
+#               (find and center camera on instr, i.e. eye contact)
+#               (wait 1 second)
+#               (tilt up 30 degrees)
+#               (tilt back down to default state)
+#           elif info[instr] == "up whole":
+#               (find and center camera on instr, i.e. eye contact)
+#               (wait 1 second)
+#               (tilt up 60 degrees)
+#               (tilt back down to default state)   
+#           elif info[instr] == "down half":
+#               (find and center camera on instr, i.e. eye contact)
+#               (wait 1 second)
+#               (tilt down 30 degrees)
+#               (tilt back up to default state)   
+#           elif info[instr] == "down whole":
+#               (find and center camera on instr, i.e. eye contact)
+#               (wait 1 second)
+#               (tilt down 60 degrees)
+#               (tilt back up to default state)
+#           else:
+#               (skip this instr)
+#       (then global cue function)
+#   (then move on to next measure)
 
 
 
@@ -55,4 +51,6 @@
 # - is the dictionary format useful as output of the robot_instructions function? easy to access?
 # - what if someone misses or misinterprets a cue (e.g. goes up a whole step instead of half)? would mess up future chords as well
 # - how to define the "move-on cue" - what counts as desire to change/boredom/displeasure?
+#   - could do a trial run with an explicitly defined move-on cue for the musicians ("raise your eyebrows if you're bored")
+#     and then, once we know everything else is working, make the cue more naturalistic
 # - try out what tilt angles work best for which cues
