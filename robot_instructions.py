@@ -54,11 +54,11 @@ def determine_robot_movement(pitch_difference):
     else:
         return "irregular"
 
-# Example usage
-midi_file_name = 'next_right_thing_2.mid'
-robot_instructions_by_measure = robot_instructions(midi_file_name)
-print(robot_instructions_by_measure)
+# Example usage:
+# midi_file_name = 'next_right_thing_2.mid'
+# robot_instructions_by_measure = robot_instructions(midi_file_name)
+# print(robot_instructions_by_measure)
 
 # Example output:
-# {'Measure 1': {}, 'Measure 2': {'Violin I': 'up half', 'Violin II': 'stay', 'Viola': 'down whole', 'Violoncello': 'stay'}, 
+# {'Measure 1': {}, 'Measure 2': {'Violin I': 'up half', 'Violin II': 'stay', 'Viola': 'down whole', 'Violoncello': 'stay'}, ...
 # and so on for all measures}
