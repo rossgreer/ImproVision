@@ -9,11 +9,10 @@ def robot_instructions(midi_file_name):
     Arbitrary number of instruments and measures.
     
     Returns:
-    A dictionary where keys are measures and values are new mini sub-dictionaries 
-    with instruments and their respective movements.
+    A list of dictionaries, each representing a measure and containing instruments with their movements. 
     """
     midi_data = pretty_midi.PrettyMIDI(midi_file_name)
-    instructions_by_measure = {}
+    instructions = []
 
     for instrument in midi_data.instruments:
         if not instrument.is_drum: # Skip drums, MIDI treats those weirdly
@@ -23,21 +22,21 @@ def robot_instructions(midi_file_name):
             for note in sorted(instrument.notes, key=lambda x: x.start):
                 # Assuming 4/4 time signature and 120 bpm
                 measure_number = int(note.start / (60 / 120) / 4) + 1 # 60/120/4 because 60secs/120bpm in 4/4 time
-                measure_key = f"Measure {measure_number}"
 
-                if measure_key not in instructions_by_measure: # Initialize sub-dictionaries
-                    instructions_by_measure[measure_key] = {}
-
-                if previous_pitch is not None and measure_number != previous_measure:
+                if previous_pitch is not None and previous_measure is not None and measure_number != previous_measure:
                     pitch_difference = note.pitch - previous_pitch
-                    movement = determine_robot_movement(pitch_difference) # See helper function below
+                    movement = determine_robot_movement(pitch_difference)
+
+                    while len(instructions) < measure_number - 1:
+                        instructions.append({}) # Add a new dictionary for each new measure
+
                     instrument_name = instrument.name or f"Program {instrument.program}"
-                    instructions_by_measure[measure_key][instrument_name] = movement
+                    instructions[measure_number - 2][instrument_name] = movement # -2 because we skip the first measure (i.e., moving into measure 1) & list indexing
 
                 previous_pitch = note.pitch
                 previous_measure = measure_number
     
-    return instructions_by_measure
+    return instructions
 
 def determine_robot_movement(pitch_difference):
     """Determines the movement for the robot based on pitch difference."""
@@ -55,10 +54,10 @@ def determine_robot_movement(pitch_difference):
         return "irregular"
 
 # Example usage:
-# midi_file_name = 'next_right_thing_2.mid'
-# robot_instructions_by_measure = robot_instructions(midi_file_name)
-# print(robot_instructions_by_measure)
+midi_file_name = 'next_right_thing_2.mid'
+robot_instructions_by_measure = robot_instructions(midi_file_name)
+print(robot_instructions_by_measure)
 
 # Example output:
-# {'Measure 1': {}, 'Measure 2': {'Violin I': 'up half', 'Violin II': 'stay', 'Viola': 'down whole', 'Violoncello': 'stay'}, ...
-# and so on for all measures}
+# [{'Violin I': 'up half', 'Violin II': 'stay', 'Viola': 'down whole', 'Violoncello': 'stay'}, .....]
+# and so on for all measures
