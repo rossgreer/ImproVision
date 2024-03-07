@@ -54,3 +54,10 @@
 #   - could do a trial run with an explicitly defined move-on cue for the musicians ("raise your eyebrows if you're bored")
 #     and then, once we know everything else is working, make the cue more naturalistic
 # - try out what tilt angles work best for which cues
+
+
+
+
+# helpful camera links
+# https://github.com/PTZOptics/Robotics-Research-Learning-Support-Program 
+# https://ptzoptics.imagerelay.com/ml/PTZOptics-Command-List-HTTP-CGI-G3 
