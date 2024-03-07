@@ -54,10 +54,14 @@ def buildCgiUrl(command):
 def post(command):
     return sendCameraControl(buildCgiUrl(command))
 
-post("up")
-time.sleep(1)
-post("down")
-time.sleep(1)
-post("ptzstop")
+# post("up")
+# time.sleep(1)
+# post("down")
+# time.sleep(1)
+# post("ptzstop")
 
-
+# post("home")
+# time.sleep(2)
+# post("left")
+# time.sleep(1)
+# post("ptzstop")
