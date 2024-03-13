@@ -32,7 +32,7 @@ def execute_one_measure(midi_file_name, measure_number):
     time.sleep(1.5)  # Wait a bit
     post("ptzstop")  # Stop the camera movement
 
-    # Iterate over instruments in their positional order
+    # Iterate over instruments in order
     for instrument in INSTRUMENT_ORDER:
         time.sleep(1)
         movement = measure_instructions.get(instrument)
@@ -64,24 +64,44 @@ def execute_movement_for_instrument(movement):
         post("up")
         time.sleep(0.7)
         post("ptzstop")
+        # Return to horizontal
+        time.sleep(2)
+        post("down")
+        time.sleep(0.6)
+        post("ptzstop")
     elif movement == "up whole":
         post("up")
         time.sleep(0.7)
         post("ptzstop")
-        time.sleep(0.5)  # Pause
+        time.sleep(0.5)  # Pause between half steps
         post("up")
         time.sleep(0.7)
+        post("ptzstop")
+        # Return to horizontal
+        time.sleep(2)
+        post("down")
+        time.sleep(1)
         post("ptzstop")
     elif movement == "down half":
         post("down")
         time.sleep(0.7)
         post("ptzstop")
-    elif movement == "down whole":
-        post("down")
+        # Return to horizontal
+        time.sleep(2)
+        post("up")
         time.sleep(0.7)
         post("ptzstop")
-        time.sleep(0.5)  # Pause
+    elif movement == "down whole":
         post("down")
+        time.sleep(0.5)
+        post("ptzstop")
+        time.sleep(0.5)  # Pause between half steps
+        post("down")
+        time.sleep(0.5)
+        post("ptzstop")
+        # Return to horizontal
+        time.sleep(2)
+        post("up")
         time.sleep(0.7)
         post("ptzstop")
 
@@ -89,15 +109,16 @@ def execute_movement_for_instrument(movement):
 
 # Example usage
 midi_file_name = 'next_right_thing_2.mid'
-measure_number = 2
+measure_number = 4
 execute_one_measure(midi_file_name, measure_number)
-
-# kind of works right now - need to find a way to bring back to horizontal (see Issues below)
-# in the future, replace post("left") and post("right") with ways to center on instrument instead
-
 
 #######
 
+# kind of works right now
+# in the future, replace post("left") and post("right") with ways to center on instrument instead
+
 # Issues:
-# - !!!! at what point do we vertically center the camera again? while turning right? 
-# - tilting down has a very narrow angle - hard to tell between down half and down whole
+# - !!!! horizontally level camera after individual movements
+#       - 2x 'up' for 0.7 =/= 1x 'down' for 1.4
+#       - and going 'up' for 0.7 =/= going 'down' for 0.7 ...
+# - tilting down has a very narrow angle; hard to tell between down half and down whole
