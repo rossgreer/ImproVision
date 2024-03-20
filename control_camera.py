@@ -45,7 +45,7 @@ def draw_landmarks_on_image(rgb_image, detection_result):
   return annotated_image
 
 
-def sample_image():
+def sample_image(img):
     # STEP 2: Create an PoseLandmarker object.
     base_options = python.BaseOptions(model_asset_path='pose_landmarker.task')
     options = vision.PoseLandmarkerOptions(
@@ -53,15 +53,12 @@ def sample_image():
         output_segmentation_masks=True)
     detector = vision.PoseLandmarker.create_from_options(options)
 
-    # STEP 3: Load the input image.
-    image = mp.Image.create_from_file("image.jpg")
-
     # STEP 4: Detect pose landmarks from the input image.
-    detection_result = detector.detect(image)
+    detection_result = detector.detect(img)
 
     # STEP 5: Process the detection result. In this case, visualize it.
-    annotated_image = draw_landmarks_on_image(image.numpy_view(), detection_result)
-    cv2_imshow(cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR))
+    annotated_image = draw_landmarks_on_image(img.numpy_view(), detection_result)
+    return cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR)
 
 
 def sendCameraControl(url):
@@ -134,7 +131,8 @@ if __name__ == "main":
 
         # If frame is read correctly, display it
         if ret:
-            cv2.imshow('Camera Stream', frame)
+            pose_image = sample_image(frame)
+            cv2.imshow('Camera Stream', pose_image)
 
         # Check for 'q' key pressed to exit the loop
         if cv2.waitKey(1) & 0xFF == ord('q'):
