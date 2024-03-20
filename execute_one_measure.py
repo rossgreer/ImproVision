@@ -13,7 +13,7 @@ def execute_one_measure(midi_file_name, measure_number):
 
     Parameters:
     midi_file_name (str): The path to the MIDI file.
-    measure_number (int): The specific measure number to extract movements from.
+    measure_number (int): The specific measure number to extract movement directions from.
     """
     instructions_by_measure = robot_instructions(midi_file_name)
 
@@ -43,7 +43,6 @@ def execute_one_measure(midi_file_name, measure_number):
             print(f"{instrument} has no specific movement. 'Looking' at the instrument.")
             time.sleep(1)
         
-        # "Look" at the instrument for 1 second before moving to the next
         time.sleep(1)
 
         # Pan to the next instrument on the right
@@ -51,6 +50,16 @@ def execute_one_measure(midi_file_name, measure_number):
             post("right")
             time.sleep(1)  
             post("ptzstop")
+    
+    # Final 'slam' cue
+    post("home")
+    time.sleep(3)
+    post('ptzstop')
+    time.sleep(1)
+    post('up')
+    time.sleep(0.7)
+    post('down')
+    time.sleep(0.7)
 
 
 def execute_movement_for_instrument(movement):
@@ -71,16 +80,16 @@ def execute_movement_for_instrument(movement):
         post("ptzstop")
     elif movement == "up whole":
         post("up")
-        time.sleep(0.7)
+        time.sleep(0.5)
         post("ptzstop")
         time.sleep(0.5)  # Pause between half steps
         post("up")
-        time.sleep(0.7)
+        time.sleep(0.5)
         post("ptzstop")
         # Return to horizontal
         time.sleep(2)
         post("down")
-        time.sleep(1)
+        time.sleep(0.6)
         post("ptzstop")
     elif movement == "down half":
         post("down")
@@ -106,19 +115,9 @@ def execute_movement_for_instrument(movement):
         post("ptzstop")
 
 
-
 # Example usage
 midi_file_name = 'next_right_thing_2.mid'
 measure_number = 4
 execute_one_measure(midi_file_name, measure_number)
 
-#######
-
-# kind of works right now
 # in the future, replace post("left") and post("right") with ways to center on instrument instead
-
-# Issues:
-# - !!!! horizontally level camera after individual movements
-#       - 2x 'up' for 0.7 =/= 1x 'down' for 1.4
-#       - and going 'up' for 0.7 =/= going 'down' for 0.7 ...
-# - tilting down has a very narrow angle; hard to tell between down half and down whole
