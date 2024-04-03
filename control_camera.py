@@ -51,19 +51,21 @@ def sample_image(img):
     base_options = python.BaseOptions(model_asset_path='pose_landmarker_lite.task')
     options = vision.PoseLandmarkerOptions(
         base_options=base_options,
-        output_segmentation_masks=True)
+        output_segmentation_masks=True, num_poses = 8)
     detector = vision.PoseLandmarker.create_from_options(options)
 
     rgb_frame = mp.Image(image_format=mp.ImageFormat.SRGB, data=img)
 
     # STEP 4: Detect pose landmarks from the input image.
     detection_result = detector.detect(rgb_frame)
+    print(detection_result)
 
     # STEP 5: Process the detection result. In this case, visualize it.
     annotated_image = draw_landmarks_on_image(rgb_frame.numpy_view(), detection_result)
 
     return annotated_image
     #return cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR)
+
 
 
 def sendCameraControl(url):
