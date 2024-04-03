@@ -45,26 +45,55 @@ def draw_landmarks_on_image(rgb_image, detection_result):
       solutions.drawing_styles.get_default_pose_landmarks_style())
   return annotated_image
 
+# previous sample_image function
+# def sample_image(img):
+#     # STEP 2: Create an PoseLandmarker object.
+#     base_options = python.BaseOptions(model_asset_path='pose_landmarker_lite.task')
+#     options = vision.PoseLandmarkerOptions(
+#         base_options=base_options,
+#         output_segmentation_masks=True, num_poses = 8)
+#     detector = vision.PoseLandmarker.create_from_options(options)
+
+#     rgb_frame = mp.Image(image_format=mp.ImageFormat.SRGB, data=img)
+
+#     # STEP 4: Detect pose landmarks from the input image.
+#     detection_result = detector.detect(rgb_frame)
+#     print(detection_result)
+
+#     # STEP 5: Process the detection result. In this case, visualize it.
+#     annotated_image = draw_landmarks_on_image(rgb_frame.numpy_view(), detection_result)
+
+#     return annotated_image
+#     #return cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR)
 
 def sample_image(img):
-    # STEP 2: Create an PoseLandmarker object.
     base_options = python.BaseOptions(model_asset_path='pose_landmarker_lite.task')
     options = vision.PoseLandmarkerOptions(
         base_options=base_options,
-        output_segmentation_masks=True, num_poses = 8)
+        output_segmentation_masks=True)
     detector = vision.PoseLandmarker.create_from_options(options)
 
     rgb_frame = mp.Image(image_format=mp.ImageFormat.SRGB, data=img)
 
-    # STEP 4: Detect pose landmarks from the input image.
     detection_result = detector.detect(rgb_frame)
-    print(detection_result)
 
-    # STEP 5: Process the detection result. In this case, visualize it.
     annotated_image = draw_landmarks_on_image(rgb_frame.numpy_view(), detection_result)
 
-    return annotated_image
-    #return cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR)
+    # Want to return wrist and nose landmarks
+    if detection_result.pose_landmarks:
+        extracted_landmarks = {}
+        for landmark in detection_result.pose_landmarks:
+            if landmark.HasField('landmark'):
+                extracted_landmarks = {
+                    'nose': landmark.landmark[0],  # Nose landmark
+                    'left_wrist': landmark.landmark[15],  # Left wrist landmark
+                    'right_wrist': landmark.landmark[16]  # Right wrist landmark
+                }
+                break  # Currently assuming single-person detection, break after the first set of landmarks -- change later
+
+        return annotated_image, extracted_landmarks
+    else:
+        return annotated_image, {}
 
 
 
@@ -139,7 +168,12 @@ while True:
 
     # If frame is read correctly, display it
     if ret:
-        pose_image = sample_image(frame)
+        pose_image, landmarks = sample_image(frame)
+        if landmarks:
+            # Detect if either wrist is raised above the nose
+            # Comparing the y-coordinates because the origin is at the top left corner
+            if landmarks['left_wrist'].y < landmarks['nose'].y or landmarks['right_wrist'].y < landmarks['nose'].y:
+                print("Arm is raised")
         cv2.imshow('Camera Stream', pose_image)
     # Check for 'q' key pressed to exit the loop
     if cv2.waitKey(1) & 0xFF == ord('q'):
