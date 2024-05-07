@@ -3,13 +3,59 @@
 import requests
 import time
 import cv2
-from mediapipe import solutions
-from mediapipe.framework.formats import landmark_pb2
+#from mediapipe import solutions
+#from mediapipe.framework.formats import landmark_pb2
 import numpy as np
-import mediapipe as mp
-from mediapipe.tasks import python
-from mediapipe.tasks.python import vision
+# import mediapipe as mp
+# from mediapipe.tasks import python
+# from mediapipe.tasks.python import vision
 import matplotlib.pyplot as plt
+from mmpose.apis import MMPoseInferencer
+
+#from mmpose import infer, vis
+
+# https://mmcv.readthedocs.io/en/latest/get_started/build.html
+
+# Load pre-trained pose estimation model
+pose_model = infer.init_pose_model(config='hrnet_pose.py',
+                                   checkpoint='hrnet_w32_256x192.pth',
+                                   device='cuda')
+
+# Open webcam
+cap = cv2.VideoCapture(0)
+
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # instantiate the inferencer using the model alias
+    inferencer = MMPoseInferencer('human')
+
+    # The MMPoseInferencer API employs a lazy inference approach,
+    # creating a prediction generator when given input
+    result_generator = inferencer(frame, show=True)
+    result = next(result_generator)
+    print("Next")
+
+    # # Perform pose estimation
+    # pose_results, _ = infer.inference_top_down_pose_model(
+    #     pose_model, frame)
+
+    # # Visualize pose estimation results
+    # vis.show_multi_pose_result(frame, pose_results, show=False)
+
+    # # Display the result
+    # cv2.imshow('Pose Estimation', frame)
+
+    # # Exit when 'q' is pressed
+    # if cv2.waitKey(1) & 0xFF == ord('q'):
+    #     break
+
+# Release the webcam and close OpenCV windows
+cap.release()
+cv2.destroyAllWindows()
+
 
 # !pip install -q mediapipe
 # !wget -O pose_landmarker.task -q https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task
