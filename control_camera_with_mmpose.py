@@ -1,18 +1,22 @@
 import cv2
 import numpy as np
-from mmpose.apis import inference_top_down_pose_model, init_pose_model, vis_pose_result
+#from mmpose.apis import inference_top_down_pose_model, init_pose_model, vis_pose_result
 import requests
 import time
 import matplotlib.pyplot as plt
+from mmpose.apis import MMPoseInferencer
+
 
 # Adjust these parts depending on how we structure the directory
-config_file = 'path/to/mmpose/config/crowdpose.py'  
-checkpoint_file = 'path/to/checkpoint/crowdpose.pth'  
-device = 'cuda:0'  
-pose_model = init_pose_model(config_file, checkpoint_file, device=device)
+# config_file = 'path/to/mmpose/config/crowdpose.py'  
+# checkpoint_file = 'path/to/checkpoint/crowdpose.pth'  
+# device = 'cuda:0'  
+# pose_model = init_pose_model(config_file, checkpoint_file, device=device)
 
 # MMPose has its own visualization function, see vis_pose_result in sample_img function below
 # So draw_landmarks_on_image function has been removed
+
+# Keypoint index mapping: https://github.com/open-mmlab/mmpose/blob/main/configs/_base_/datasets/coco.py
 
 def sample_image(img):
     # Pose estimation
@@ -41,9 +45,9 @@ def sample_image(img):
     for person_pose in pose_results:
         keypoints = person_pose['keypoints']
         person_landmarks = {
-            'nose': keypoints[12],  
-            'left_wrist': keypoints[4],
-            'right_wrist': keypoints[5]
+            'nose': keypoints[0], #[12],  
+            'left_wrist': keypoints[9], #[4],
+            'right_wrist': keypoints[10]
         }
         all_extracted_landmarks.append(person_landmarks)
 
@@ -98,8 +102,14 @@ def buildCgiUrl(command):
 def post(command):
     return sendCameraControl(buildCgiUrl(command))
 
+# instantiate the inferencer using the model alias
+inferencer = MMPoseInferencer('wholebody')
+
+cap = cv2.VideoCapture('rtsp://192.168.100.88/1')
+
 while True:
-    cap = cv2.VideoCapture('rtsp://192.168.100.88/1')
+    print("Entered loop")
+
 
     if not cap.isOpened():
         print("Error: Couldn't open the camera.")
@@ -108,15 +118,23 @@ while True:
     ret, frame = cap.read()
 
     if ret:
-        pose_image, all_extracted_landmarks = sample_image(frame)
-        
-        # Check each person for hand-above-head gesture
-        for person_landmarks in all_extracted_landmarks:
-            if is_hand_above_head(person_landmarks):
-                print("Detected a person with their hand above their head.")
 
-        # Display video stream with pose estimation
-        cv2.imshow('Camera Stream', pose_image)
+        result_generator = inferencer(frame, show=False)
+        result = next(result_generator)
+        print(result['predictions'])
+
+
+        # pose_image, all_extracted_landmarks = sample_image(frame)
+        
+        # # Check each person for hand-above-head gesture
+        # for person_landmarks in all_extracted_landmarks:
+        #     if is_hand_above_head(person_landmarks):
+        #         print("Detected a person with their hand above their head.")
+
+        # # Display video stream with pose estimation
+        # cv2.imshow('Camera Stream', pose_image)
+
+
     
     # Check for 'q' key to exit loop
     if cv2.waitKey(1) & 0xFF == ord('q'):
