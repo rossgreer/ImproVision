@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import requests
 from mmpose.apis import MMPoseInferencer, init_model, inference_topdown
+import matplotlib.pyplot as plt
 
 # Constants
 INSTRUMENT_ORDER = ['Violin I', 'Violin II', 'Viola', 'Violoncello']
@@ -209,41 +210,104 @@ def process_video_stream(cap, model, instructions):
     Processes the video stream to detect hand-raising gestures and execute movements.
     """
     measure_number = 1  # Initialize measure number
+    time.sleep(.5) # for testing with just 1 person
+
+
+
+    i = 0
     while True:
+        i += 1
         ret, frame = cap.read()
+
+        # Set the desired frame rate (e.g., 2 frames per second)
+        desired_fps = 1
+        delay = int(1000 / desired_fps)
+
+
         if not ret:
             print("Failed to read frame from camera.")
-            break
+            print("Attempting Camera Stream restart.")
+            #break
+            #continue
+            cap.release()
+            cv2.destroyAllWindows()
+            # Initialize the camera
+            while not cap.isOpened():
+                cap = cv2.VideoCapture('rtsp://192.168.100.88/1')
 
-        print("Frame read successfully")
+                # Ensure camera is ready
+                if not cap.isOpened():
+                    print("Error: Couldn't open the camera.")
+                    print("Attempting restart.")
+                    #exit()
+                else:
+                    ret, frame = cap.read()
+
+
+
+        print("Frame read successfully "+str(i))
 
         result = inference_topdown(model, frame)
-        #print(f"Raw inference result: {result}")
+        print(f"Raw inference result: {result}")
+        print(type(result))
+        for thing in result:
+            print("THIS IS ONE ITEM")
+            print(thing)
 
-        if len(result) > 0 and 'predictions' in result[0]:
-            musician_positions = get_musician_positions(result[0]['predictions'])
-            print(f"Musician positions: {musician_positions}")
+        #if len(result) > 0 and 'predictions' in result[0]:
+        if len(result) > 0: # and 'predictions' in result:
 
-            execute_one_measure(MIDI_FILE_NAME, measure_number, musician_positions)
-            print(f"Executed measure number: {measure_number}")
-            time.sleep(2)
+
+            p1 = result[0]
+            print(type(p1))
+            print(p1)
+            print("Keypoints")
+            print(p1.pred_instances)
+            print("did that work")
+            print(p1.pred_instances.keypoints)
+            print("let's go")
+            print(p1['keypoints'])
+            # ['predictions']
+            # p2 = p1[0]
+            # p3 = p2[0]
+            # p4 = p3['keypoints']
+            person_nose = result['predictions'][0][0]['keypoints'][0]
+            check = result['predictions'][0][0]['bbox'][0][0]
+
+            if not check - 0 < 0.5:
+                print("Person Found")
+                print(person_nose)
+        
+            # musician_positions = get_musician_positions(result[0]['predictions'])
+            # print(f"Musician positions: {musician_positions}")
+
+            # execute_one_measure(MIDI_FILE_NAME, measure_number, musician_positions)
+            # print(f"Executed measure number: {measure_number}")
+            # time.sleep(2)
             
-            # Check if any musician raised their hand to move to the next measure
-            if any(is_hand_above_head(person['keypoints']) for person in result['predictions']):
-                measure_number += 1  # Move to the next measure
-                print(f"Moving on to measure number: {measure_number}")
-                if measure_number > len(instructions):
-                    print("All measures completed.")
-                    break
+            # # Check if any musician raised their hand to move to the next measure
+            # if any(is_hand_above_head(person['keypoints']) for person in result['predictions']):
+            #     measure_number += 1  # Move to the next measure
+            #     print(f"Moving on to measure number: {measure_number}")
+            #     if measure_number > len(instructions):
+            #         print("All measures completed.")
+            #         break
 
         else:
             print("No valid predictions found in the frame.")
 
-        time.sleep(5) # for testing with just 1 person
+        # Wait for a specific amount of time (in milliseconds)
 
-        cv2.imshow('Camera Stream', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        if i % 20 == 0:
+            cv2.imshow('Camera Stream', frame)
+            # Exit the loop if 'q' key is pressed
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+        #time.sleep(1)
+
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
 
     cap.release()
     cv2.destroyAllWindows()
