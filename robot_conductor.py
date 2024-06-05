@@ -5,6 +5,7 @@ import numpy as np
 import requests
 from mmpose.apis import MMPoseInferencer, init_model, inference_topdown
 import matplotlib.pyplot as plt
+import time
 
 # Constants
 INSTRUMENT_ORDER = ['Violin I', 'Violin II', 'Viola', 'Violoncello']
@@ -102,7 +103,7 @@ def execute_movement(movement):
     send_camera_control("home")
     time.sleep(2)
 
-def execute_one_measure(midi_file_name, measure_number, musician_positions):
+def execute_one_measure(midi_file_name, measure_number, musician_positions): #currently unused, this is the more complex thing
     """
     Executes camera movements based on the instructions extracted from a specific measure in the given MIDI file.
     """
@@ -152,7 +153,7 @@ def execute_one_measure(midi_file_name, measure_number, musician_positions):
     send_camera_control("down")
     time.sleep(0.7)
 
-def time_for_turn_by_proportion_of_range(target_nose_x):
+def time_for_turn_by_proportion_of_range(target_nose_x): #also currently unused
     """
     Calculates the duration and direction for the camera to turn based on the target nose x-coordinate.
     """
@@ -180,7 +181,7 @@ def init_pose_model():
     ckpt = 'https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192-cd5e845c_20230123.pth'
     return init_model(model_cfg, ckpt, device=DEVICE)
 
-def is_hand_above_head(person_landmarks):
+def is_hand_above_head(person_landmarks): # check later, currently unused
     """
     Checks if any hand is raised above the head.
     """
@@ -189,7 +190,7 @@ def is_hand_above_head(person_landmarks):
     right_wrist_y = person_landmarks['right_wrist'][1]
     return left_wrist_y < nose_y or right_wrist_y < nose_y
 
-def get_musician_positions(results):
+def get_musician_positions(results): #check later too
     """
     Extracts the positions of the musicians from the pose estimation results.
     """
@@ -205,14 +206,117 @@ def get_musician_positions(results):
         positions[person['bbox'][0][0]] = nose_x  # Map bbox x-coordinate to instrument name
     return positions
 
+def simple_execute_one_measure(midi_file_name, measure_number): # just for now, use actual positions later
+    instructions_by_measure = robot_instructions(midi_file_name)
+
+    if measure_number < 1 or measure_number > len(instructions_by_measure):
+        print(f"Measure number {measure_number} is out of range for the given MIDI file.")
+        return
+
+    measure_instructions = instructions_by_measure[measure_number - 1]
+
+    # Center
+    send_camera_control("home")
+    time.sleep(4)
+
+    ### REPLACE: find person on far left ###
+    # Start by panning to the far left
+    send_camera_control("left")  
+    time.sleep(1.5)  # Wait a bit
+    send_camera_control("ptzstop")  # Stop the camera movement
+
+    # Iterate over instruments in order
+    for instrument in INSTRUMENT_ORDER:
+        time.sleep(1)
+        movement = measure_instructions.get(instrument)
+        if movement:
+            print(f"Executing movement for {instrument}: {movement}")
+            execute_movement_for_instrument(movement) # See helper function below
+        else:
+            print(f"{instrument} has no specific movement. 'Looking' at the instrument.")
+            time.sleep(1)
+        
+        time.sleep(1)
+
+        # Pan to the next instrument on the right
+        if instrument != INSTRUMENT_ORDER[-1]:
+            ### REPLACE: find next person towards the right ###
+            send_camera_control("right")
+            time.sleep(1)  
+            send_camera_control("ptzstop")
+    
+    # Final 'slam' cue
+    send_camera_control("home")
+    time.sleep(3)
+    send_camera_control('ptzstop')
+    time.sleep(1)
+    send_camera_control('up')
+    time.sleep(0.7)
+    send_camera_control('down')
+    time.sleep(0.7)
+
+def execute_movement_for_instrument(movement): # only used for simple_execute_one_measure
+    """
+    Executes the camera movement based on the specified movement instruction.
+
+    Parameters:
+    movement (str): The movement instruction (e.g., "up half", "up whole").
+    """
+    if movement == "up half":
+        send_camera_control("up")
+        time.sleep(0.7)
+        send_camera_control("ptzstop")
+        # Return to horizontal
+        time.sleep(2)
+        send_camera_control("down")
+        time.sleep(0.6)
+        send_camera_control("ptzstop")
+    elif movement == "up whole":
+        send_camera_control("up")
+        time.sleep(0.5)
+        send_camera_control("ptzstop")
+        time.sleep(0.5)  # Pause between half steps
+        send_camera_control("up")
+        time.sleep(0.5)
+        send_camera_control("ptzstop")
+        # Return to horizontal
+        time.sleep(2)
+        send_camera_control("down")
+        time.sleep(0.6)
+        send_camera_control("ptzstop")
+    elif movement == "down half":
+        send_camera_control("down")
+        time.sleep(0.7)
+        send_camera_control("ptzstop")
+        # Return to horizontal
+        time.sleep(2)
+        send_camera_control("up")
+        time.sleep(0.7)
+        send_camera_control("ptzstop")
+    elif movement == "down whole":
+        send_camera_control("down")
+        time.sleep(0.5)
+        send_camera_control("ptzstop")
+        time.sleep(0.5)  # Pause between half steps
+        send_camera_control("down")
+        time.sleep(0.5)
+        send_camera_control("ptzstop")
+        # Return to horizontal
+        time.sleep(2)
+        send_camera_control("up")
+        time.sleep(0.7)
+        send_camera_control("ptzstop")
+
 def process_video_stream(cap, model, instructions):
     """
     Processes the video stream to detect hand-raising gestures and execute movements.
     """
     measure_number = 1  # Initialize measure number
-    time.sleep(.5) # for testing with just 1 person
+    time.sleep(.5) 
 
-
+    # to avoid detection of same raised hand in multiple consecutive frames, add debounce mechanism
+    debounce_time = 3
+    last_detection_time = time.time()
 
     i = 0
     while True:
@@ -222,7 +326,6 @@ def process_video_stream(cap, model, instructions):
         # Set the desired frame rate (e.g., 2 frames per second)
         desired_fps = 1
         delay = int(1000 / desired_fps)
-
 
         if not ret:
             print("Failed to read frame from camera.")
@@ -243,40 +346,69 @@ def process_video_stream(cap, model, instructions):
                 else:
                     ret, frame = cap.read()
 
-
-
         print("Frame read successfully "+str(i))
 
         result = inference_topdown(model, frame)
         print(f"Raw inference result: {result}")
-        print(type(result))
-        for thing in result:
-            print("THIS IS ONE ITEM")
-            print(thing)
+        #print(type(result))
+        #for person in result: # each thing in result is one detected person
+            #print("THIS IS ONE ITEM")
+            #print(thing)
+
+        hand_raised_detected = False
 
         #if len(result) > 0 and 'predictions' in result[0]:
-        if len(result) > 0: # and 'predictions' in result:
+        if len(result) > 0 and (time.time() - last_detection_time > debounce_time): # and 'predictions' in result:
 
+            for person in result:
+                keypoints = person.pred_instances.keypoints # keypoints for one person
+                print("Detected keypoints:")
+                print(keypoints)
 
-            p1 = result[0]
-            print(type(p1))
-            print(p1)
-            print("Keypoints")
-            print(p1.pred_instances)
-            print("did that work")
-            print(p1.pred_instances.keypoints)
-            print("let's go")
-            print(p1['keypoints'])
+                # https://mmpose.readthedocs.io/en/latest/dataset_zoo/2d_wholebody_keypoint.html#coco-wholebody 
+                nose = keypoints[0] 
+                left_arm = keypoints[10]
+                right_arm = keypoints[11]
+
+                print(f"Nose position: {nose}")
+                print(f"Left arm position: {left_arm}")
+                print(f"Right arm position: {right_arm}")
+
+                # Check if either arm is above the nose by comparing y coordinates. Assuming y increases towards bottom of frame.
+                if left_arm[1] < nose[1] or right_arm[1] < nose[1]:
+                    print("Hand raised detected!")
+                    hand_raised_detected = True
+                    last_detection_time = time.time()
+                    break # break out if raised hand is detected
+
+            # if hand_raised_detected:
+            #     measure_number += 1
+            #     print(f"Moving on to measure number: {measure_number}")
+            #     execute_one_measure(MIDI_FILE_NAME, measure_number, )
+            #     if measure_number > len(instructions):
+            #         print("All measures completed.")
+            #         break
+
+            #p1 = result[0]
+            # print(type(p1))
+            # print(p1)
+            # print("Keypoints")
+            # print(p1.pred_instances)
+            # print("did that work")
+            #print(p1.pred_instances.keypoints) # gives pixel locations of detected keypoints
+            #print("let's go")
+            #print(p1['keypoints'])
             # ['predictions']
             # p2 = p1[0]
             # p3 = p2[0]
             # p4 = p3['keypoints']
-            person_nose = result['predictions'][0][0]['keypoints'][0]
-            check = result['predictions'][0][0]['bbox'][0][0]
+            
+            #person_nose = result['predictions'][0][0]['keypoints'][0]
+            #check = result['predictions'][0][0]['bbox'][0][0]
 
-            if not check - 0 < 0.5:
-                print("Person Found")
-                print(person_nose)
+            #if not check - 0 < 0.5:
+                #print("Person Found")
+                #print(person_nose)
         
             # musician_positions = get_musician_positions(result[0]['predictions'])
             # print(f"Musician positions: {musician_positions}")
@@ -295,6 +427,17 @@ def process_video_stream(cap, model, instructions):
 
         else:
             print("No valid predictions found in the frame.")
+
+        if hand_raised_detected:
+            measure_number += 1
+            print(f"Moving on to measure number: {measure_number}")
+
+            # Pause detection and execute the next measure
+            simple_execute_one_measure(MIDI_FILE_NAME, measure_number)
+            
+            if measure_number > len(instructions):
+                print("All measures completed.")
+                break
 
         # Wait for a specific amount of time (in milliseconds)
 
