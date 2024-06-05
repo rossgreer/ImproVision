@@ -68,18 +68,7 @@ def determine_robot_movement(pitch_difference):
     else:
         return "irregular"
 
-# def send_camera_control(command):
-#     """
-#     Sends a command to the camera and checks the response status. 
-#     """
-#     url = CAMERA_URL + command
-#     response = requests.get(url)
-#     if response.status_code == 200:
-#         print(f"Command '{command}' was successful")
-#     else:
-#         print(f"Failed to execute command '{command}'")
-
-def send_camera_control(command, pan_speed=24, tilt_speed=20, focus_speed=10, zoom_speed=10):
+def send_camera_control(command, pan_speed=24, tilt_speed=20, focus_speed=10, zoom_speed=10): # updated to include speed parameter
     """
     Sends a command to the camera with optional speed parameters and checks the response status.
     """
@@ -102,10 +91,10 @@ def send_camera_control(command, pan_speed=24, tilt_speed=20, focus_speed=10, zo
     url = build_cgi_url(command, pan_speed, tilt_speed, focus_speed, zoom_speed)
     response = requests.get(url)
     if response.status_code == 200:
-        print(f"Command '{url}' was successful")
+        print(f"Command '{command}' was successful")
         return "success"
     else:
-        print(f"Failed to execute command '{url}'")
+        print(f"Failed to execute command '{command}'")
         return "failure"
 
 def execute_movement(movement):
@@ -253,7 +242,7 @@ def simple_execute_one_measure(midi_file_name, measure_number): # just for now, 
     ### REPLACE: find person on far left ###
     # Start by panning to the far left
     send_camera_control("left")  
-    time.sleep(1.5)  # Wait a bit
+    time.sleep(1)  # Wait a bit
     send_camera_control("ptzstop")  # Stop the camera movement
 
     # Iterate over instruments in order
@@ -273,7 +262,7 @@ def simple_execute_one_measure(midi_file_name, measure_number): # just for now, 
         if instrument != INSTRUMENT_ORDER[-1]:
             ### REPLACE: find next person towards the right ###
             send_camera_control("right")
-            time.sleep(1)  
+            time.sleep(.75)  
             send_camera_control("ptzstop")
     
     # Final 'slam' cue
@@ -346,7 +335,7 @@ def process_video_stream(cap, model, instructions):
     time.sleep(.5) 
 
     # to avoid detection of same raised hand in multiple consecutive frames, add debounce mechanism
-    debounce_time = 3
+    debounce_time = 10
     last_detection_time = time.time()
 
     i = 0
@@ -382,9 +371,6 @@ def process_video_stream(cap, model, instructions):
         result = inference_topdown(model, frame)
         #print(f"Raw inference result: {result}")
         #print(type(result))
-        #for person in result: # each thing in result is one detected person
-            #print("THIS IS ONE ITEM")
-            #print(thing)
 
         hand_raised_detected = False
 
@@ -393,14 +379,15 @@ def process_video_stream(cap, model, instructions):
 
             for person in result:
                 keypoints = person.pred_instances.keypoints[0] # keypoints for one person
-                print("Detected keypoints:")
-                print(keypoints)
-                print(len(keypoints))
+                #print("Detected keypoints:")
+                #print(keypoints)
+                #print(len(keypoints))
 
                 # https://mmpose.readthedocs.io/en/latest/dataset_zoo/2d_wholebody_keypoint.html#coco-wholebody 
-                nose = keypoints[0] 
-                left_arm = keypoints[10]
-                right_arm = keypoints[11]
+                # https://github.com/jin-s13/COCO-WholeBody
+                nose = keypoints[0] # bc nose is keypoint 1
+                left_arm = keypoints[9] # left hand is keypoint 10
+                right_arm = keypoints[10] # right hand is keypoint 11
 
                 print(f"Nose position: {nose}")
                 print(f"Left arm position: {left_arm}")
