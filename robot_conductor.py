@@ -9,9 +9,11 @@ import time
 
 # Constants
 INSTRUMENT_ORDER = ['Violin I', 'Violin II', 'Viola', 'Violoncello']
-CAMERA_URL = 'http://192.168.100.88/cgi-bin/ptzctrl.cgi?ptzcmd&'
+#CAMERA_URL = 'http://192.168.100.88/cgi-bin/ptzctrl.cgi?ptzcmd&'
 MIDI_FILE_NAME = 'next_right_thing_2.mid'
 DEVICE = 'cuda'
+CAMERA_IP = "192.168.100.88"
+BASE_URL = f'http://{CAMERA_IP}/cgi-bin/ptzctrl.cgi?ptzcmd&'
 
 def robot_instructions(midi_file_name):
     """
@@ -66,16 +68,45 @@ def determine_robot_movement(pitch_difference):
     else:
         return "irregular"
 
-def send_camera_control(command):
+# def send_camera_control(command):
+#     """
+#     Sends a command to the camera and checks the response status. 
+#     """
+#     url = CAMERA_URL + command
+#     response = requests.get(url)
+#     if response.status_code == 200:
+#         print(f"Command '{command}' was successful")
+#     else:
+#         print(f"Failed to execute command '{command}'")
+
+def send_camera_control(command, pan_speed=24, tilt_speed=20, focus_speed=10, zoom_speed=10):
     """
-    Sends a command to the camera and checks the response status. 
+    Sends a command to the camera with optional speed parameters and checks the response status.
     """
-    url = CAMERA_URL + command
+    def build_cgi_url(command, pan_speed, tilt_speed, focus_speed, zoom_speed):
+        """
+        Constructs the camera control URL based on the command and speeds provided.
+        """
+        action = command.lower()
+        if action in ["up", "down", "left", "right"]:
+            return f"{BASE_URL}{action}&{pan_speed}&{tilt_speed}"
+        elif action in ["home", "ptzstop"]:
+            return f"{BASE_URL}{action}"
+        elif action in ["focusin", "focusout", "focusstop"]:
+            return f"{BASE_URL}{action}&{focus_speed}"
+        elif action in ["zoomin", "zoomout", "zoomstop"]:
+            return f"{BASE_URL}{action}&{zoom_speed}"
+        else:
+            return f"{BASE_URL}home&10&10"
+
+    url = build_cgi_url(command, pan_speed, tilt_speed, focus_speed, zoom_speed)
     response = requests.get(url)
     if response.status_code == 200:
-        print(f"Command '{command}' was successful")
+        print(f"Command '{url}' was successful")
+        return "success"
     else:
-        print(f"Failed to execute command '{command}'")
+        print(f"Failed to execute command '{url}'")
+        return "failure"
 
 def execute_movement(movement):
     """
@@ -103,7 +134,7 @@ def execute_movement(movement):
     send_camera_control("home")
     time.sleep(2)
 
-def execute_one_measure(midi_file_name, measure_number, musician_positions): #currently unused, this is the more complex thing
+def execute_one_measure(midi_file_name, measure_number, musician_positions): # currently unused, this is the more complex thing
     """
     Executes camera movements based on the instructions extracted from a specific measure in the given MIDI file.
     """
@@ -153,7 +184,7 @@ def execute_one_measure(midi_file_name, measure_number, musician_positions): #cu
     send_camera_control("down")
     time.sleep(0.7)
 
-def time_for_turn_by_proportion_of_range(target_nose_x): #also currently unused
+def time_for_turn_by_proportion_of_range(target_nose_x): # also currently unused
     """
     Calculates the duration and direction for the camera to turn based on the target nose x-coordinate.
     """
@@ -190,7 +221,7 @@ def is_hand_above_head(person_landmarks): # check later, currently unused
     right_wrist_y = person_landmarks['right_wrist'][1]
     return left_wrist_y < nose_y or right_wrist_y < nose_y
 
-def get_musician_positions(results): #check later too
+def get_musician_positions(results): # check later too
     """
     Extracts the positions of the musicians from the pose estimation results.
     """
@@ -349,7 +380,7 @@ def process_video_stream(cap, model, instructions):
         print("Frame read successfully "+str(i))
 
         result = inference_topdown(model, frame)
-        print(f"Raw inference result: {result}")
+        #print(f"Raw inference result: {result}")
         #print(type(result))
         #for person in result: # each thing in result is one detected person
             #print("THIS IS ONE ITEM")
@@ -361,9 +392,10 @@ def process_video_stream(cap, model, instructions):
         if len(result) > 0 and (time.time() - last_detection_time > debounce_time): # and 'predictions' in result:
 
             for person in result:
-                keypoints = person.pred_instances.keypoints # keypoints for one person
+                keypoints = person.pred_instances.keypoints[0] # keypoints for one person
                 print("Detected keypoints:")
                 print(keypoints)
+                print(len(keypoints))
 
                 # https://mmpose.readthedocs.io/en/latest/dataset_zoo/2d_wholebody_keypoint.html#coco-wholebody 
                 nose = keypoints[0] 
