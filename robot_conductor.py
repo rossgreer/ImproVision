@@ -274,6 +274,10 @@ def simple_execute_one_measure(midi_file_name, measure_number): # just for now, 
     time.sleep(0.7)
     send_camera_control('down')
     time.sleep(0.7)
+    send_camera_control('ptzstop')
+    time.sleep(0.5)
+    send_camera_control('home')
+    time.sleep(1)
 
 def execute_movement_for_instrument(movement): # only used for simple_execute_one_measure
     """
@@ -327,6 +331,15 @@ def execute_movement_for_instrument(movement): # only used for simple_execute_on
         time.sleep(0.7)
         send_camera_control("ptzstop")
 
+def draw_keypoints(frame, keypoints, color=(0, 255, 0)):
+    # Ensure that keypoints is an array of arrays [[x, y, confidence], ...]
+    for keypoint in keypoints:
+        # Check if confidence score is available and meets the threshold
+        if len(keypoint) > 2 and keypoint[2] > 0.5:  # Assuming confidence is the third item
+            cv2.circle(frame, (int(keypoint[0]), int(keypoint[1])), 3, color, -1)
+        elif len(keypoint) == 2:  # If no confidence is provided
+            cv2.circle(frame, (int(keypoint[0]), int(keypoint[1])), 3, color, -1)
+
 def process_video_stream(cap, model, instructions):
     """
     Processes the video stream to detect hand-raising gestures and execute movements.
@@ -337,6 +350,8 @@ def process_video_stream(cap, model, instructions):
     # to avoid detection of same raised hand in multiple consecutive frames, add debounce mechanism
     debounce_time = 10
     last_detection_time = time.time()
+    debounce_frames = 500
+    last_hand_raise_frame = -debounce_frames
 
     i = 0
     while True:
@@ -375,13 +390,16 @@ def process_video_stream(cap, model, instructions):
         hand_raised_detected = False
 
         #if len(result) > 0 and 'predictions' in result[0]:
-        if len(result) > 0 and (time.time() - last_detection_time > debounce_time): # and 'predictions' in result:
+        #if len(result) > 0 and (time.time() - last_detection_time > debounce_time): # and 'predictions' in result:
+        if len(result) > 0 and (i - last_hand_raise_frame >= debounce_frames):
 
             for person in result:
                 keypoints = person.pred_instances.keypoints[0] # keypoints for one person
                 #print("Detected keypoints:")
                 #print(keypoints)
                 #print(len(keypoints))
+
+                draw_keypoints(frame, keypoints) #visual debugging
 
                 # https://mmpose.readthedocs.io/en/latest/dataset_zoo/2d_wholebody_keypoint.html#coco-wholebody 
                 # https://github.com/jin-s13/COCO-WholeBody
@@ -395,8 +413,10 @@ def process_video_stream(cap, model, instructions):
 
                 # Check if either arm is above the nose by comparing y coordinates. Assuming y increases towards bottom of frame.
                 if left_arm[1] < nose[1] or right_arm[1] < nose[1]:
+                #if left_arm[1] < nose[1] - 50 or right_arm[1] < nose[1] - 50:
                     print("Hand raised detected!")
                     hand_raised_detected = True
+                    last_hand_raise_frame = i
                     last_detection_time = time.time()
                     break # break out if raised hand is detected
 
@@ -456,6 +476,13 @@ def process_video_stream(cap, model, instructions):
             
             if measure_number > len(instructions):
                 print("All measures completed.")
+                # insert some sequence of commands that indicate to musicians that score is over; improve later
+                send_camera_control("left")
+                time.sleep(0.5)
+                send_camera_control("ptzstop")
+                send_camera_control("right")
+                time.sleep(0.7)
+                send_camera_control("ptzstop")
                 break
 
         # Wait for a specific amount of time (in milliseconds)
