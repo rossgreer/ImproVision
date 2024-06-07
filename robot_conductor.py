@@ -97,7 +97,7 @@ def send_camera_control(command, pan_speed=24, tilt_speed=20, focus_speed=10, zo
         print(f"Failed to execute command '{command}'")
         return "failure"
 
-def execute_movement(movement):
+def execute_movement(movement): # also currently unused
     """
     Executes the camera movement based on the specified movement instruction.
     """
@@ -237,7 +237,7 @@ def simple_execute_one_measure(midi_file_name, measure_number): # just for now, 
 
     # Center
     send_camera_control("home")
-    time.sleep(4)
+    time.sleep(1)
 
     ### REPLACE: find person on far left ###
     # Start by panning to the far left
@@ -247,7 +247,7 @@ def simple_execute_one_measure(midi_file_name, measure_number): # just for now, 
 
     # Iterate over instruments in order
     for instrument in INSTRUMENT_ORDER:
-        time.sleep(1)
+        time.sleep(.5)
         movement = measure_instructions.get(instrument)
         if movement:
             print(f"Executing movement for {instrument}: {movement}")
@@ -256,7 +256,7 @@ def simple_execute_one_measure(midi_file_name, measure_number): # just for now, 
             print(f"{instrument} has no specific movement. 'Looking' at the instrument.")
             time.sleep(1)
         
-        time.sleep(1)
+        time.sleep(0.5)
 
         # Pan to the next instrument on the right
         if instrument != INSTRUMENT_ORDER[-1]:
@@ -267,15 +267,15 @@ def simple_execute_one_measure(midi_file_name, measure_number): # just for now, 
     
     # Final 'slam' cue
     send_camera_control("home")
-    time.sleep(3)
+    time.sleep(2)
     send_camera_control('ptzstop')
-    time.sleep(1)
+    time.sleep(0.5)
     send_camera_control('up')
     time.sleep(0.7)
     send_camera_control('down')
-    time.sleep(0.7)
+    time.sleep(1.5)
     send_camera_control('ptzstop')
-    time.sleep(0.5)
+    time.sleep(2)
     send_camera_control('home')
     time.sleep(1)
 
@@ -291,29 +291,29 @@ def execute_movement_for_instrument(movement): # only used for simple_execute_on
         time.sleep(0.7)
         send_camera_control("ptzstop")
         # Return to horizontal
-        time.sleep(2)
+        time.sleep(0.7)
         send_camera_control("down")
         time.sleep(0.6)
         send_camera_control("ptzstop")
     elif movement == "up whole":
         send_camera_control("up")
-        time.sleep(0.5)
+        time.sleep(0.6)
         send_camera_control("ptzstop")
         time.sleep(0.5)  # Pause between half steps
         send_camera_control("up")
-        time.sleep(0.5)
+        time.sleep(0.6)
         send_camera_control("ptzstop")
         # Return to horizontal
-        time.sleep(2)
+        time.sleep(0.7)
         send_camera_control("down")
-        time.sleep(0.6)
+        time.sleep(0.75)
         send_camera_control("ptzstop")
     elif movement == "down half":
         send_camera_control("down")
         time.sleep(0.7)
         send_camera_control("ptzstop")
         # Return to horizontal
-        time.sleep(2)
+        time.sleep(0.7)
         send_camera_control("up")
         time.sleep(0.7)
         send_camera_control("ptzstop")
@@ -326,7 +326,7 @@ def execute_movement_for_instrument(movement): # only used for simple_execute_on
         time.sleep(0.5)
         send_camera_control("ptzstop")
         # Return to horizontal
-        time.sleep(2)
+        time.sleep(0.7)
         send_camera_control("up")
         time.sleep(0.7)
         send_camera_control("ptzstop")
@@ -348,8 +348,8 @@ def process_video_stream(cap, model, instructions):
     time.sleep(.5) 
 
     # to avoid detection of same raised hand in multiple consecutive frames, add debounce mechanism
-    debounce_time = 10
-    last_detection_time = time.time()
+    #debounce_time = 10
+    #last_detection_time = time.time()
     debounce_frames = 500
     last_hand_raise_frame = -debounce_frames
 
@@ -502,6 +502,10 @@ def process_video_stream(cap, model, instructions):
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
+    # Send camera to home position
+    send_camera_control("home")
+    time.sleep(4)
+
     # Initialize the pose model
     model = init_pose_model()
     
@@ -516,9 +520,8 @@ if __name__ == "__main__":
         print("Error: Couldn't open the camera.")
         exit()
 
-    # Send camera to home position
-    send_camera_control("home")
-    time.sleep(4)
+    # send_camera_control("home")
+    # time.sleep(4)
 
     # Load MIDI instructions
     instructions = robot_instructions(MIDI_FILE_NAME)
