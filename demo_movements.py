@@ -115,7 +115,7 @@ def simple_execute_one_measure(midi_file_name, measure_number): # just for now, 
     ### REPLACE: find person on far left ###
     # Start by panning to the far left
     send_camera_control("left")  
-    time.sleep(1)  # Wait a bit
+    time.sleep(0.7)  # Wait a bit
     send_camera_control("ptzstop")  # Stop the camera movement
 
     # Iterate over instruments in order
@@ -135,7 +135,7 @@ def simple_execute_one_measure(midi_file_name, measure_number): # just for now, 
         if instrument != INSTRUMENT_ORDER[-1]:
             ### REPLACE: find next person towards the right ###
             send_camera_control("right")
-            time.sleep(.75)  
+            time.sleep(.5)  
             send_camera_control("ptzstop")
     
     # Final 'slam' cue

@@ -242,7 +242,7 @@ def simple_execute_one_measure(midi_file_name, measure_number): # just for now, 
     ### REPLACE: find person on far left ###
     # Start by panning to the far left
     send_camera_control("left")  
-    time.sleep(1)  # Wait a bit
+    time.sleep(0.7)  # Wait a bit
     send_camera_control("ptzstop")  # Stop the camera movement
 
     # Iterate over instruments in order
@@ -262,7 +262,7 @@ def simple_execute_one_measure(midi_file_name, measure_number): # just for now, 
         if instrument != INSTRUMENT_ORDER[-1]:
             ### REPLACE: find next person towards the right ###
             send_camera_control("right")
-            time.sleep(.75)  
+            time.sleep(.5)  
             send_camera_control("ptzstop")
     
     # Final 'slam' cue
@@ -472,16 +472,22 @@ def process_video_stream(cap, model, instructions):
             print(f"Moving on to measure number: {measure_number}")
 
             # Pause detection and execute the next measure
-            simple_execute_one_measure(MIDI_FILE_NAME, measure_number)
+            simple_execute_one_measure(MIDI_FILE_NAME, measure_number-1)
             
-            if measure_number > len(instructions):
+            if measure_number > len(instructions)+1:
                 print("All measures completed.")
                 # insert some sequence of commands that indicate to musicians that score is over; improve later
                 send_camera_control("left")
-                time.sleep(0.5)
+                time.sleep(0.8)
                 send_camera_control("ptzstop")
                 send_camera_control("right")
-                time.sleep(0.7)
+                time.sleep(1)
+                send_camera_control("ptzstop")
+                send_camera_control("left")
+                time.sleep(1)
+                send_camera_control("ptzstop")
+                send_camera_control("right")
+                time.sleep(1)
                 send_camera_control("ptzstop")
                 break
 
