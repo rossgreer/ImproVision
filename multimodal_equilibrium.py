@@ -16,8 +16,8 @@ from itertools import product
 DEVICE = 'cuda'
 CAMERA_IP = "192.168.100.88"
 BASE_URL = f'http://{CAMERA_IP}/cgi-bin/ptzctrl.cgi?ptzcmd&'
-HAND_RAISE_THRESHOLD = 50  # Adjust this value as needed (increased for more significant raise)
-HEAD_PROXIMITY_THRESHOLD = 100  # Adjust this value as needed
+HAND_RAISE_THRESHOLD = 50  
+HEAD_PROXIMITY_THRESHOLD = 100  
 
 
 ### POSE FUNCTIONS ###
@@ -31,6 +31,9 @@ def init_pose_model():
     return init_model(model_cfg, ckpt, device=DEVICE)
 
 def draw_keypoints(frame, keypoints, color=(0, 255, 0)):
+    """
+    Draws keypoints on camera stream.
+    """
     for i, keypoint in enumerate(keypoints):
         if len(keypoint) > 2 and keypoint[2] > 0.5:
             cv2.circle(frame, (int(keypoint[0]), int(keypoint[1])), 3, color, -1)
@@ -41,13 +44,13 @@ def draw_keypoints(frame, keypoints, color=(0, 255, 0)):
 
 def detect_gestures(keypoints):
     """
-    Detects two gestures: Raised Hand (significantly above nose) and Hand to Head
+    Detects two gestures: Raised Hand and Hand to Head
     """
     nose = keypoints[0]
     left_wrist = keypoints[9]
     right_wrist = keypoints[10]
     
-    # Detect Raised Hand (significantly above nose)
+    # Detect Raised Hand
     left_hand_raised = left_wrist[1] < nose[1] - HAND_RAISE_THRESHOLD
     right_hand_raised = right_wrist[1] < nose[1] - HAND_RAISE_THRESHOLD
     
@@ -58,6 +61,9 @@ def detect_gestures(keypoints):
     return (left_hand_raised or right_hand_raised), (left_hand_to_head or right_hand_to_head)
 
 def process_video_stream(cap, model):
+    """
+    Main video processing loop.
+    """
     start_time = time.time()
     while True:
         ret, frame = cap.read()
@@ -89,9 +95,11 @@ def process_video_stream(cap, model):
 
                 if hand_raised and not hand_to_head:
                     print("Hand Raised detected!")
+                    save_image(frame, "hand_raised.jpg")
                     return "Hand Raised"
                 elif hand_to_head and not hand_raised:
                     print("Hand to Head detected!")
+                    save_image(frame, "hand_to_head.jpg")
                     return "Hand to Head"
 
         cv2.imshow('Camera Stream', frame)
@@ -99,6 +107,13 @@ def process_video_stream(cap, model):
             break
 
     return None  # Return None if the loop exits without detecting a gesture
+
+def save_image(frame, filename):
+    """
+    Saves static image of detected gesture.
+    """
+    cv2.imwrite(filename, frame)
+    print(f"Image saved as {filename}")
 
 
 
