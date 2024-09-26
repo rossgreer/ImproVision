@@ -1,5 +1,5 @@
-from robot_instructions import robot_instructions
-from control_camera import post
+from Archive.robot_instructions import robot_instructions
+from Archive.control_camera import post
 import time
 
 # Global instrument order from left to right

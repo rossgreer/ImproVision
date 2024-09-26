@@ -1,4 +1,4 @@
-from control_camera_with_mmpose import post
+from Archive.control_camera_with_mmpose import post
 import time
 
 post('home')
