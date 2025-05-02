@@ -69,6 +69,20 @@ def sendCameraControl(url):
         print("An Error occured while ")
         return "success"
 
+
+#def initialize_musicians():
+    # Approach 1:
+    # Keep track of the musician locations from 'home' position
+    # Count how many musicians you should pass before beginning to hone in on the target
+    # Should only move in one direction; stop when the target is left-of-center
+
+    # Approach 2: 
+    # Form angle estimate of each musician (or cluster)
+    # Form motor estimate to reach this angle
+
+
+
+
 # buildUrl will create the HTTP CGI commands using the data passed to it.
 # Once finished it will return the processed url to the function that called it.
 def buildCgiUrl(command):
@@ -102,43 +116,116 @@ def buildCgiUrl(command):
 def post(command):
     return sendCameraControl(buildCgiUrl(command))
 
-# instantiate the inferencer using the model alias
-inferencer = MMPoseInferencer('wholebody')
 
-cap = cv2.VideoCapture('rtsp://192.168.100.88/1')
+def time_for_turn_by_proportion_of_range(target_nose_x):
+    left_range = .62
+    right_range = .56
+    max_x_left = 301/1920
+    max_x_right = 1736/1920
+    rate_left = (1920/2 - 301)/.62
+    rate_right = (1736 - 1920/2)/.56
 
-while True:
-    print("Entered loop")
+    if target_nose_x > 1920/2:
+        direction = "right"
+        target_motion_time = (target_nose_x - 1920/2) /  rate_right
 
-
-    if not cap.isOpened():
-        print("Error: Couldn't open the camera.")
-        break  # Exit the loop if camera can't be accessed
-
-    ret, frame = cap.read()
-
-    if ret:
-
-        result_generator = inferencer(frame, show=False)
-        result = next(result_generator)
-        print(result['predictions'])
+    else:
+        direction = "left"
+        target_motion_time = (1920/2-target_nose_x) / rate_left
 
 
-        # pose_image, all_extracted_landmarks = sample_image(frame)
+    return target_motion_time, direction
+
+
+if __name__ == "__main__":
+    # instantiate the inferencer using the model alias
+    post('home')
+    time.sleep(4)
+    inferencer = MMPoseInferencer('wholebody', device="cpu")
+
+    cap = cv2.VideoCapture('rtsp://192.168.100.88/1')
+
+
+    #musician_positions = initialize_musicians()
+    i = 0
+
+    while True:
+        print("Entered loop")
+
+
+        if not cap.isOpened():
+            print("Error: Couldn't open the camera.")
+            break  # Exit the loop if camera can't be accessed
+
+        ret, frame = cap.read()
+       
+        if ret:
+
+            #cv2.imwrite("im_"+str(i)+".jpg", frame)
+            result_generator = inferencer(frame, show=True)
+            result = next(result_generator)
+            print(result['predictions'])
+
+            person_nose = result['predictions'][0][0]['keypoints'][0]
+            print(person_nose)
+            turn_time, turn_dir = time_for_turn_by_proportion_of_range(person_nose[0])
+
+            post(turn_dir)
+            time.sleep(turn_time)
+            post('ptzstop')
+
+
+            post("up")
+            time.sleep(0.5)
+            post("ptzstop")
+            time.sleep(0.5)  # Pause between half steps
+            post("up")
+            time.sleep(0.5)
+            post("ptzstop")
+            # Return to horizontal
+            time.sleep(2)
+            post("down")
+            time.sleep(0.6)
+            post("ptzstop")
+
+            # time.sleep(5)
+            # post('home')
+            # time.sleep(4)
+
+
+
+
+            # Final 'slam' cue
+            post("home")
+            time.sleep(3)
+            post('ptzstop')
+            time.sleep(1)
+            post('up')
+            time.sleep(0.7)
+            post('down')
+            time.sleep(0.7)
+
+            time.sleep(1)
+            # Center
+            post("home")
+            time.sleep(4)
+
+            # pose_image, all_extracted_landmarks = sample_image(frame)
+            
+            # # Check each person for hand-above-head gesture
+            # for person_landmarks in all_extracted_landmarks:
+            #     if is_hand_above_head(person_landmarks):
+            #         print("Detected a person with their hand above their head.")
+
+            # # Display video stream with pose estimation
+            # cv2.imshow('Camera Stream', pose_image)
+
+        #time.sleep(.25)
         
-        # # Check each person for hand-above-head gesture
-        # for person_landmarks in all_extracted_landmarks:
-        #     if is_hand_above_head(person_landmarks):
-        #         print("Detected a person with their hand above their head.")
-
-        # # Display video stream with pose estimation
-        # cv2.imshow('Camera Stream', pose_image)
-
-
-    
-    # Check for 'q' key to exit loop
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+        # Check for 'q' key to exit loop
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
         break
-
-cap.release()
-cv2.destroyAllWindows()
+        i += 1
+    cap.release()
+    cv2.destroyAllWindows()

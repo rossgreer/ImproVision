@@ -9,7 +9,7 @@ import sys
 DEVICE = 'cuda'
 CAMERA_IP = "192.168.100.88"  # camera IP
 RTSP_STREAM = f'rtsp://{CAMERA_IP}/1'
-MAC_IP = "100.80.149.248"  # destination IP
+MAC_IP = "[REPLACE WITH IP]"  # destination IP
 PORT = 8000
 
 HAND_RAISE_THRESHOLD = 50
