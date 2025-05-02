@@ -1,1 +1,1 @@
-Find the Guided Harmony demo videos at: https://tinyurl.com/ImproVisionHarmonyGame
+Find our demo videos at: [https://tinyurl.com/ImproVisionDemos](https://tinyurl.com/ImproVisionDemos)
