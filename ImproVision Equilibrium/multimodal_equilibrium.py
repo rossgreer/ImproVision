@@ -183,29 +183,67 @@ def find_closest_constrained_chord(notes, desired_quality, max_movement=2):
     best_match = None
     min_cost = float('inf')
     
+    # Choose the pitch-class template relative to an arbitrary root (0)
+    if desired_quality == "Major":
+        template = {0, 4, 7}
+    elif desired_quality == "Minor":
+        template = {0, 3, 7}
+    else:
+        return None, float('inf')
+
     movements = list(product(range(-max_movement, max_movement + 1), repeat=num_musicians))
     
     for movement in movements:
         new_pitches = base_pitches + np.array(movement)
-        normalized_pitches = new_pitches % 12
-        
-        if desired_quality == "Major":
-            if set(normalized_pitches) == set([0, 4, 7]):  # Major triad
+        pcs = set((new_pitches % 12).tolist())
+
+        # Check against all 12 possible roots
+        for r in range(12):
+            target = {(r + t) % 12 for t in template}
+            if pcs == target:
                 cost = sum(abs(m) for m in movement)
+                # Strictly less-than keeps first-found solution in ties
                 if cost < min_cost:
                     min_cost = cost
                     best_match = new_pitches
-        elif desired_quality == "Minor":
-            if set(normalized_pitches) == set([0, 3, 7]):  # Minor triad
-                cost = sum(abs(m) for m in movement)
-                if cost < min_cost:
-                    min_cost = cost
-                    best_match = new_pitches
+                break  # already matched a root; no need to try other roots for this movement
     
     if best_match is not None:
         return [midi_to_note(pitch) for pitch in best_match], min_cost
     else:
         return None, float('inf')
+
+
+# def find_closest_constrained_chord(notes, desired_quality, max_movement=2):
+#     base_pitches = np.array([note_to_midi(note) for note in notes])
+#     num_musicians = len(notes)
+    
+#     best_match = None
+#     min_cost = float('inf')
+    
+#     movements = list(product(range(-max_movement, max_movement + 1), repeat=num_musicians))
+    
+#     for movement in movements:
+#         new_pitches = base_pitches + np.array(movement)
+#         normalized_pitches = new_pitches % 12
+        
+#         if desired_quality == "Major":
+#             if set(normalized_pitches) == set([0, 4, 7]):  # Major triad
+#                 cost = sum(abs(m) for m in movement)
+#                 if cost < min_cost:
+#                     min_cost = cost
+#                     best_match = new_pitches
+#         elif desired_quality == "Minor":
+#             if set(normalized_pitches) == set([0, 3, 7]):  # Minor triad
+#                 cost = sum(abs(m) for m in movement)
+#                 if cost < min_cost:
+#                     min_cost = cost
+#                     best_match = new_pitches
+    
+#     if best_match is not None:
+#         return [midi_to_note(pitch) for pitch in best_match], min_cost
+#     else:
+#         return None, float('inf')
 
 
 
